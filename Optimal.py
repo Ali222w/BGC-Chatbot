@@ -74,12 +74,9 @@ with st.sidebar:
     interface_language = st.selectbox("Interface Language", ["English", "العربية"])
 
     # Apply CSS direction based on selected language
-    if interface_language == "العربية":
-        apply_css_direction("rtl")  # Right-to-left for Arabic
-        st.title("الإعدادات")  # Sidebar title in Arabic
-    else:
-        apply_css_direction("ltr")  # Left-to-right for English
-        st.title("Settings")  # Sidebar title in English
+   
+    apply_css_direction("ltr")  # Left-to-right for English
+    st.title("Settings")  # Sidebar title in English
 
     # Validate API key inputs and initialize components if valid
     if groq_api_key and google_api_key:

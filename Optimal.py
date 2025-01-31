@@ -563,44 +563,52 @@ def get_relevant_context(query, retriever=None):
         return {"references": []}
 
 def create_chat_response(query, context, memory, language):
-    """إنشاء إجابة للمحادثة باستخدام Groq"""
+    """Create a response for the chat using Groq"""
     try:
-        # تحضير السياق من المراجع
+        # Prepare context from references
         references_text = ""
         if context and "references" in context:
             for ref in context["references"]:
                 if ref["content"]:
                     references_text += f"\n{ref['content']}"
 
-        # بناء الرسالة للنموذج
+        # Determine the language of the input
+        if any('\u0600' <= char <= '\u06FF' for char in query):  # Check for Arabic characters
+            response_language = "Arabic"
+            system_instruction = "You are a helpful assistant. Always respond in Arabic."
+        else:
+            response_language = "English"
+            system_instruction = "You are a helpful assistant. Always respond in English."
+
+        # Build the message for the model
         messages = []
         
-        # إضافة السياق إذا وجد
+        # Add the context if available
         if references_text:
             messages.append({
                 "role": "system",
-                "content": f"You are a helpful assistant. Use this context to answer the question:\n{references_text}"
+                "content": f"{system_instruction} Use this context to answer the question:\n{references_text}"
             })
         
-        # إضافة الذاكرة السابقة
+        # Add previous memory
         if memory:
             chat_history = memory.load_memory_variables({})
             if "history" in chat_history:
                 messages.extend(chat_history["history"])
         
-        # إضافة السؤال الحالي
+        # Add the current question
         messages.append({
             "role": "user",
             "content": query
         })
         
-        # الحصول على الإجابة من Groq
+        # Get the response from Groq
         response = llm.invoke(messages)
         
-        # تنظيم الإجابة
+        # Organize the answer
         answer = response.content
         
-        # إضافة الإجابة إلى الذاكرة
+        # Add the answer to memory
         if memory:
             memory.chat_memory.add_user_message(query)
             memory.chat_memory.add_ai_message(answer)

@@ -169,7 +169,7 @@ with st.sidebar:
                 prompt=prompt
             )
 
-        # Load existing embeddings from files
+        # Load existing embeddings from files based on selected language
         if "vectors" not in st.session_state:
             with st.spinner("جارٍ تحميل التضميدات... الرجاء الانتظار." if interface_language == "العربية" else "Loading embeddings... Please wait."):
                 # Initialize embeddings
@@ -177,13 +177,14 @@ with st.sidebar:
                     model="models/embedding-001"
                 )
 
-                # Load existing FAISS index with safe deserialization
-                embeddings_path = "embeddings"  # Path to your embeddings folder
+                # Set embeddings path based on language
+                embeddings_path = "embeddings/Arabic/embeddings" if interface_language == "العربية" else "embeddings/English/embeddings"
+                
                 try:
                     st.session_state.vectors = FAISS.load_local(
                         embeddings_path,
                         embeddings,
-                        allow_dangerous_deserialization=True  # Only use if you trust the source of the embeddings
+                        allow_dangerous_deserialization=True
                     )
                 except Exception as e:
                     st.error(f"حدث خطأ أثناء تحميل التضميدات: {str(e)}" if interface_language == "العربية" else f"Error loading embeddings: {str(e)}")
@@ -210,8 +211,8 @@ with st.sidebar:
     else:
         st.error("الرجاء إدخال مفاتيح API للمتابعة." if interface_language == "العربية" else "Please enter both API keys to proceed.")
 
-# Initialize the PDFSearchAndDisplay class with the default PDF file
-pdf_path = "BGC.pdf"
+# Initialize the PDFSearchAndDisplay class with the language-specific PDF file
+pdf_path = "BGC-Ar.pdf" if interface_language == "العربية" else "BGC.pdf"
 pdf_searcher = PDFSearchAndDisplay()
 
 # Main area for chat interface
@@ -493,10 +494,10 @@ negative_phrases = [
     "Incorrect",
     "غير مناسب",
     "Inappropriate",
-    "Please provide me",  # إضافة هذه العبارة
-    "يرجى تزويدي",  # إضافة هذه العبارة
-    "Can you provide more",  # إضافة هذه العبارة
-    "هل يمكنك تقديم المزيد"  # إضافة هذه العبارة
+    "Please provide me",
+    "يرجى تزويدي",
+    "Can you provide more",
+    "هل يمكنك تقديم المزيد"
 ]
 
 def clean_text(text):

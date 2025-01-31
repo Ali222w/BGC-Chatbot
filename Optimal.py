@@ -402,7 +402,7 @@ def process_user_input(user_input, is_first_message=False):
         st.error(f"{UI_TEXTS[interface_language]['error_question']}{str(e)}")
 
 def display_references(refs):
-    """عرض المراجع والصور من ملفات PDF"""
+    """Display references and images from PDF files"""
     if refs and isinstance(refs, dict) and "references" in refs:
         page_info = []
         for ref in refs["references"]:
@@ -558,10 +558,10 @@ def create_chat_response(query, context, memory, language):
         # Determine the language of the input
         if any('\u0600' <= char <= '\u06FF' for char in query):  # Check for Arabic characters
             response_language = "Arabic"
-            system_instruction = "You are a helpful assistant. Always respond in Arabic."
+            system_instruction = "You are a helpful assistant. Always respond in Arabic. Use the provided context to ensure accuracy."
         else:
             response_language = "English"
-            system_instruction = "You are a helpful assistant. Always respond in English."
+            system_instruction = "You are a helpful assistant. Always respond in English. Use the provided context to ensure accuracy."
 
         # Build the message for the model
         messages = []

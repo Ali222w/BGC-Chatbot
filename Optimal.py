@@ -402,23 +402,26 @@ def process_user_input(user_input, is_first_message=False):
         st.error(f"{UI_TEXTS[interface_language]['error_question']}{str(e)}")
 
 def display_references(refs):
-    """عرض المراجع والصور من ملفات PDF"""
+    """Display references and screenshots from PDF files"""
     if refs and isinstance(refs, dict) and "references" in refs:
-        page_info = []
-        for ref in refs["references"]:
-            if "page" in ref and ref["page"] is not None:
-                page_info.append(ref["page"])
-
-        if page_info:
-            with st.expander(UI_TEXTS[interface_language]["page_references"]):
-                cols = st.columns(2)
-                for idx, page_num in enumerate(sorted(set(page_info))):
-                    col_idx = idx % 2
-                    with cols[col_idx]:
-                        screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_num, "")])
+        # Sort pages to ensure consistency
+        refs["references"].sort(key=lambda x: x["page"])
+        
+        with st.expander(UI_TEXTS[interface_language]["page_references"]):
+            cols = st.columns(2)
+            for idx, ref in enumerate(refs["references"]):
+                col_idx = idx % 2
+                with cols[col_idx]:
+                    if ref["page"] is not None:
+                        # Capture and display the screenshot for the specific page
+                        screenshots = pdf_searcher.capture_screenshots(pdf_path, [(ref["page"], "")])
                         if screenshots:
                             st.image(screenshots[0], use_container_width=True)
-                            st.markdown(f"**{UI_TEXTS[interface_language]['page']} {page_num}**")
+                            # Display the page reference in Arabic format if necessary
+                            if interface_language == "العربية":
+                                st.markdown(f"**صفحة رقم {ref['page']}**")  # Arabic page reference
+                            else:
+                                st.markdown(f"**Page {ref['page']}**")  # English page reference
 
 def display_chat_message(message, with_refs=False):
     """عرض رسالة المحادثة"""
@@ -519,28 +522,33 @@ def extract_complete_sentences(text, max_length=200):
     return ' '.join(complete_text)
 
 def get_relevant_context(query, retriever=None):
-    """الحصول على السياق المناسب من الملفات PDF"""
     try:
         if retriever is None and "vectors" in st.session_state:
             retriever = st.session_state.vectors.as_retriever()
-
+            
         if retriever:
-            # البحث عن المستندات ذات الصلة
+            # Search for relevant documents
             docs = retriever.get_relevant_documents(query)
-
-            # تنظيم السياق
+            
+            # Organize context with precise page numbers for Arabic handling
             organized_context = []
             for doc in docs:
+                page_number = doc.metadata.get("page", None)
+                if page_number is not None:
+                    # Ensure page number is correctly identified for Arabic PDFs
+                    # You might need to parse the page number differently for Arabic
+                    # For demonstration, assuming the page number is an integer
+                    page_number = int(page_number)
                 organized_context.append({
                     "content": doc.page_content,
-                    "page": doc.metadata.get("page", None),
+                    "page": page_number,  # Use the precise page number
                     "source": doc.metadata.get("source", None)
                 })
-
+            
             return {"references": organized_context}
-
+        
         return {"references": []}
-
+            
     except Exception as e:
         st.error(f"Error getting context: {str(e)}")
         return {"references": []}

@@ -352,7 +352,7 @@ with st.sidebar:
                 load_chat(chat_id)
 
 def process_user_input(user_input, is_first_message=False):
-    """معالجة إدخال المستخدم وإنشاء الرد"""
+    """Process user input and generate a response"""
     try:
         current_chat_id = st.session_state.current_chat_id
         current_memory = st.session_state.chat_memories.get(current_chat_id)
@@ -370,10 +370,10 @@ def process_user_input(user_input, is_first_message=False):
             st.session_state.chat_history[current_chat_id]['first_message'] = title
             st.session_state.chat_history[current_chat_id]['visible'] = True
         
-        # تحضير السياق من الملفات PDF
+        # Prepare context from PDF files
         context = get_relevant_context(query=user_input)
         
-        # إنشاء الإجابة باستخدام OpenAI
+        # Create response using OpenAI
         response = create_chat_response(
             user_input,
             context,
@@ -381,28 +381,18 @@ def process_user_input(user_input, is_first_message=False):
             interface_language
         )
         
-        # Check if the response contains any negative phrases
-        if any(phrase in response["answer"].lower() for phrase in negative_phrases):
-            # For unclear questions, only show response if it's not the first message
-            if not is_first_message:
-                assistant_message = {
-                    "role": "assistant",
-                    "content": response["answer"]
-                }
-                st.session_state.messages.append(assistant_message)
-        else:
-            # For clear questions, show response with references
-            assistant_message = {
-                "role": "assistant",
-                "content": response["answer"],
-                "references": response.get("references", [])
-            }
-            st.session_state.messages.append(assistant_message)
+        # Always show response with references
+        assistant_message = {
+            "role": "assistant",
+            "content": response["answer"],
+            "references": response.get("references", [])
+        }
+        st.session_state.messages.append(assistant_message)
         
         # Update chat history
         st.session_state.chat_history[current_chat_id]['messages'] = st.session_state.messages
         
-        # Display the response
+        # Display the response with references
         display_response_with_references(response, response["answer"])
         
         if is_first_message:
@@ -438,21 +428,14 @@ def display_chat_message(message, with_refs=False):
             display_references(message)
 
 def display_response_with_references(response, answer):
-    """عرض الإجابة مع المراجع"""
-    if not any(phrase in answer.lower() for phrase in negative_phrases):
-        # إضافة المراجع إلى الرسالة
-        message = {
-            "role": "assistant",
-            "content": answer,
-            "references": response
-        }
-        display_chat_message(message, with_refs=True)
-    else:
-        # إذا كان الرد يحتوي على عبارات سلبية، نعرض الرد فقط
-        display_chat_message({
-            "role": "assistant",
-            "content": answer
-        })
+    """Display the answer with references"""
+    # Add references to the message
+    message = {
+        "role": "assistant",
+        "content": answer,
+        "references": response.get("references", [])
+    }
+    display_chat_message(message, with_refs=True)
 
 # List of negative phrases to check for unclear or insufficient answers
 negative_phrases = [

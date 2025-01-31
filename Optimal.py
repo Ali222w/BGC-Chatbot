@@ -402,7 +402,7 @@ def process_user_input(user_input, is_first_message=False):
         st.error(f"{UI_TEXTS[interface_language]['error_question']}{str(e)}")
 
 def display_references(refs):
-    """Display references and images from PDF files"""
+    """عرض المراجع والصور من ملفات PDF"""
     if refs and isinstance(refs, dict) and "references" in refs:
         page_info = []
         for ref in refs["references"]:

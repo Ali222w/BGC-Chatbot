@@ -61,12 +61,12 @@ UI_TEXTS = {
         "yesterday": "أمس",
         "previous_chats": "سجل المحادثات",
         "welcome_message": """
-        **مرحبًا!**
-        هذا بوت الدردشة الخاص بشركة غاز البصرة (BGC). يمكنك استخدام هذا البوت للحصول على معلومات حول الشركة وأنشطتها.
-
-        **كيفية الاستخدام:**
-        - اكتب سؤالك في الأسفل أو استخدم الميكروفون للتحدث.
-        - سيتم الرد عليك بناءً على المعلومات المتاحة.
+        **مرحبًا!**  
+        هذا بوت الدردشة الخاص بشركة غاز البصرة (BGC). يمكنك استخدام هذا البوت للحصول على معلومات حول الشركة وأنشطتها.  
+        
+        **كيفية الاستخدام:**  
+        - اكتب سؤالك في الأسفل أو استخدم الميكروفون للتحدث.  
+        - سيتم الرد عليك بناءً على المعلومات المتاحة.  
         """
     },
     "English": {
@@ -83,12 +83,12 @@ UI_TEXTS = {
         "yesterday": "Yesterday",
         "previous_chats": "Chat History",
         "welcome_message": """
-        **Welcome!**
-        This is the Basrah Gas Company (BGC) ChatBot. You can use this bot to get information about the company and its activities.
-
-        **How to use:**
-        - Type your question below or use the microphone to speak.
-        - You will receive answers based on available information.
+        **Welcome!**  
+        This is the Basrah Gas Company (BGC) ChatBot. You can use this bot to get information about the company and its activities.  
+        
+        **How to use:**  
+        - Type your question below or use the microphone to speak.  
+        - You will receive answers based on available information.  
         """
     }
 }
@@ -179,7 +179,7 @@ with st.sidebar:
 
                 # Set embeddings path based on language
                 embeddings_path = "embeddings/Arabic/embeddings" if interface_language == "العربية" else "embeddings/English/embeddings"
-
+                
                 try:
                     st.session_state.vectors = FAISS.load_local(
                         embeddings_path,
@@ -243,13 +243,13 @@ def create_new_chat():
     chat_id = datetime.now().strftime('%Y%m%d_%H%M%S')
     st.session_state.current_chat_id = chat_id
     st.session_state.messages = []
-
+    
     # Create new memory instance for this specific chat
     st.session_state.chat_memories[chat_id] = ConversationBufferMemory(
         memory_key="history",
         return_messages=True
     )
-
+    
     # Initialize chat but don't show in history until first message
     if chat_id not in st.session_state.chat_history:
         st.session_state.chat_history[chat_id] = {
@@ -275,7 +275,7 @@ def load_chat(chat_id):
     if chat_id in st.session_state.chat_history:
         st.session_state.current_chat_id = chat_id
         st.session_state.messages = st.session_state.chat_history[chat_id]['messages']
-
+        
         # Get or create memory for this specific chat
         if chat_id not in st.session_state.chat_memories:
             st.session_state.chat_memories[chat_id] = ConversationBufferMemory(
@@ -288,7 +288,7 @@ def load_chat(chat_id):
                     st.session_state.chat_memories[chat_id].chat_memory.add_user_message(msg["content"])
                 elif msg["role"] == "assistant":
                     st.session_state.chat_memories[chat_id].chat_memory.add_ai_message(msg["content"])
-
+        
         st.rerun()
 
 def format_chat_title(chat):
@@ -305,7 +305,7 @@ def format_chat_date(timestamp):
     """تنسيق تاريخ المحادثة"""
     today = datetime.now().date()
     chat_date = timestamp.date()
-
+    
     if chat_date == today:
         return UI_TEXTS[interface_language]['today']
     elif chat_date == today - timedelta(days=1):
@@ -319,12 +319,12 @@ with st.sidebar:
     if st.button(UI_TEXTS[interface_language]['new_chat'], use_container_width=True):
         create_new_chat()
         st.rerun()
-
+    
     st.markdown("---")
-
+    
     # Display chat history
     st.markdown(f"### {UI_TEXTS[interface_language]['previous_chats']}")
-
+    
     # Group chats by date
     chats_by_date = {}
     for chat_id, chat_data in st.session_state.chat_history.items():
@@ -334,14 +334,14 @@ with st.sidebar:
             if date not in chats_by_date:
                 chats_by_date[date] = []
             chats_by_date[date].append((chat_id, chat_data))
-
+    
     # Display chats grouped by date
     for date in sorted(chats_by_date.keys(), reverse=True):
         chats = chats_by_date[date]
-
+        
         # عرض التاريخ كعنوان
         st.markdown(f"#### {format_chat_date(chats[0][1]['timestamp'])}")
-
+        
         # عرض المحادثات تحت كل تاريخ
         for chat_id, chat_data in sorted(chats, key=lambda x: x[1]['timestamp'], reverse=True):
             if st.sidebar.button(
@@ -356,23 +356,23 @@ def process_user_input(user_input, is_first_message=False):
     try:
         current_chat_id = st.session_state.current_chat_id
         current_memory = st.session_state.chat_memories.get(current_chat_id)
-
+        
         # Add user message to chat history
         user_message = {"role": "user", "content": user_input}
         st.session_state.messages.append(user_message)
-
+        
         # If this is the first message in a chat, use it as the chat title
-        if is_first_message or (current_chat_id in st.session_state.chat_history and
+        if is_first_message or (current_chat_id in st.session_state.chat_history and 
                               not st.session_state.chat_history[current_chat_id]['messages']):
             # Clean and truncate the message for title
             title = user_input.strip().replace('\n', ' ')
             title = title[:50] + '...' if len(title) > 50 else title
             st.session_state.chat_history[current_chat_id]['first_message'] = title
             st.session_state.chat_history[current_chat_id]['visible'] = True
-
+        
         # Prepare context from PDF files
         context = get_relevant_context(query=user_input)
-
+        
         # Create response using OpenAI
         response = create_chat_response(
             user_input,
@@ -380,7 +380,7 @@ def process_user_input(user_input, is_first_message=False):
             current_memory,
             interface_language
         )
-
+        
         # Always show response with references
         assistant_message = {
             "role": "assistant",
@@ -388,40 +388,37 @@ def process_user_input(user_input, is_first_message=False):
             "references": response.get("references", [])
         }
         st.session_state.messages.append(assistant_message)
-
+        
         # Update chat history
         st.session_state.chat_history[current_chat_id]['messages'] = st.session_state.messages
-
+        
         # Display the response with references
         display_response_with_references(response, response["answer"])
-
+        
         if is_first_message:
             st.rerun()
-
+            
     except Exception as e:
         st.error(f"{UI_TEXTS[interface_language]['error_question']}{str(e)}")
 
 def display_references(refs):
-    """Display references and screenshots from PDF files"""
+    """عرض المراجع والصور من ملفات PDF"""
     if refs and isinstance(refs, dict) and "references" in refs:
-        # Sort pages to ensure consistency
-        refs["references"].sort(key=lambda x: x["page"])
-        
-        with st.expander(UI_TEXTS[interface_language]["page_references"]):
-            cols = st.columns(2)
-            for idx, ref in enumerate(refs["references"]):
-                col_idx = idx % 2
-                with cols[col_idx]:
-                    if ref["page"] is not None:
-                        # Capture and display the screenshot for the specific page
-                        screenshots = pdf_searcher.capture_screenshots(pdf_path, [(ref["page"], "")])
+        page_info = []
+        for ref in refs["references"]:
+            if "page" in ref and ref["page"] is not None:
+                page_info.append(ref["page"])
+
+        if page_info:
+            with st.expander(UI_TEXTS[interface_language]["page_references"]):
+                cols = st.columns(2)
+                for idx, page_num in enumerate(sorted(set(page_info))):
+                    col_idx = idx % 2
+                    with cols[col_idx]:
+                        screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_num, "")])
                         if screenshots:
                             st.image(screenshots[0], use_container_width=True)
-                            # Display the page reference in Arabic format if necessary
-                            if interface_language == "العربية":
-                                st.markdown(f"**صفحة رقم {ref['page']}**")  # Arabic page reference
-                            else:
-                                st.markdown(f"**Page {ref['page']}**")  # English page reference
+                            st.markdown(f"**{UI_TEXTS[interface_language]['page']} {page_num}**")
 
 def display_chat_message(message, with_refs=False):
     """عرض رسالة المحادثة"""
@@ -500,48 +497,43 @@ def extract_complete_sentences(text, max_length=200):
     sentences = text.split('.')
     complete_text = []
     current_length = 0
-
+    
     for sentence in sentences:
         sentence = sentence.strip()
         if not sentence:
             continue
-
+            
         # التأكد من أن الجملة تبدأ بحرف كبير وتنتهي بنقطة
         if sentence[0].isalpha():
             sentence = sentence[0].upper() + sentence[1:]
         if not sentence.endswith('.'):
             sentence += '.'
-
+            
         # إضافة الجملة إذا كانت ضمن الحد الأقصى للطول
         if current_length + len(sentence) <= max_length:
             complete_text.append(sentence)
             current_length += len(sentence)
         else:
             break
-
+            
     return ' '.join(complete_text)
 
 def get_relevant_context(query, retriever=None):
+    """الحصول على السياق المناسب من الملفات PDF"""
     try:
         if retriever is None and "vectors" in st.session_state:
             retriever = st.session_state.vectors.as_retriever()
             
         if retriever:
-            # Search for relevant documents
+            # البحث عن المستندات ذات الصلة
             docs = retriever.get_relevant_documents(query)
             
-            # Organize context with precise page numbers for Arabic handling
+            # تنظيم السياق
             organized_context = []
             for doc in docs:
-                page_number = doc.metadata.get("page", None)
-                if page_number is not None:
-                    # Ensure page number is correctly identified for Arabic PDFs
-                    # You might need to parse the page number differently for Arabic
-                    # For demonstration, assuming the page number is an integer
-                    page_number = int(page_number)
                 organized_context.append({
                     "content": doc.page_content,
-                    "page": page_number,  # Use the precise page number
+                    "page": doc.metadata.get("page", None),
                     "source": doc.metadata.get("source", None)
                 })
             
@@ -573,42 +565,42 @@ def create_chat_response(query, context, memory, language):
 
         # Build the message for the model
         messages = []
-
+        
         # Add the context if available
         if references_text:
             messages.append({
                 "role": "system",
                 "content": f"{system_instruction} Use this context to answer the question:\n{references_text}"
             })
-
+        
         # Add previous memory
         if memory:
             chat_history = memory.load_memory_variables({})
             if "history" in chat_history:
                 messages.extend(chat_history["history"])
-
+        
         # Add the current question
         messages.append({
             "role": "user",
             "content": query
         })
-
+        
         # Get the response from Groq
         response = llm.invoke(messages)
-
+        
         # Organize the answer
         answer = response.content
-
+        
         # Add the answer to memory
         if memory:
             memory.chat_memory.add_user_message(query)
             memory.chat_memory.add_ai_message(answer)
-
+        
         return {
             "answer": answer,
             "references": context.get("references", []) if context else []
         }
-
+        
     except Exception as e:
         st.error(f"Error creating response: {str(e)}")
         return {
@@ -630,19 +622,19 @@ human_input = st.chat_input(UI_TEXTS[interface_language]['input_placeholder'])
 if human_input:
     user_message = {"role": "user", "content": human_input}
     st.session_state.messages.append(user_message)
-
+    
     # تحديث عنوان المحادثة وإظهار الإجابة إذا كانت أول رسالة
     is_first_message = len(st.session_state.messages) == 1
     if is_first_message:
         # تحديث عنوان المحادثة
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = human_input
-
+    
     # تحديث سجل المحادثة
     st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
-
+    
     # عرض رسالة المستخدم
     display_chat_message(user_message)
-
+    
     # معالجة السؤال وإظهار الإجابة
     process_user_input(human_input, is_first_message)
 
@@ -650,19 +642,19 @@ if human_input:
 if voice_input:
     user_message = {"role": "user", "content": voice_input}
     st.session_state.messages.append(user_message)
-
+    
     # تحديث عنوان المحادثة وإظهار الإجابة إذا كانت أول رسالة
     is_first_message = len(st.session_state.messages) == 1
     if is_first_message:
         # تحديث عنوان المحادثة
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = voice_input
-
+    
     # تحديث سجل المحادثة
     st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
-
+    
     # عرض رسالة المستخدم
     display_chat_message(user_message)
-
+    
     # معالجة السؤال وإظهار الإجابة
     process_user_input(voice_input, is_first_message)
 

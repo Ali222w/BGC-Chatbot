@@ -170,9 +170,9 @@ with st.sidebar:
 
 # Initialize the PDFSearchAndDisplay class with the default PDF file
 if interface_language == "العربية":
-    pdf_path = "BGC_Arabic.pdf"
+    pdf_path = "BGC-Ar.pdf"
 else:
-    pdf_path = "BGC_English.pdf"
+    pdf_path = "BGC-En.pdf"
 pdf_searcher = PDFSearchAndDisplay()
 
 # Main area for chat interface

@@ -9,9 +9,11 @@ from bidi.algorithm import get_display
 import fitz  # PyMuPDF for screenshot capture
 import pdfplumber  # For searching text in PDF
 
-from langchain_groq import ChatGroq
+# Adjust import based on your LangChain version.
+# If you receive an import error for FAISS here, try: "from langchain.vectorstores import FAISS"
+from langchain_groq import ChatGroq  
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_community.vectorstores import FAISS
+from langchain.vectorstores import FAISS  
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
@@ -21,7 +23,6 @@ from streamlit_mic_recorder import speech_to_text  # Speech-to-text function
 logging.basicConfig(level=logging.INFO)
 
 # --- API Keys ---
-# (For security, consider loading these from environment variables or a secure config file)
 groq_api_key = "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"
 google_api_key = "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"
 
@@ -38,6 +39,7 @@ UI_TEXTS = {
         "page": "صفحة",
         "error_pdf": "حدث خطأ أثناء معالجة ملف PDF: ",
         "error_question": "حدث خطأ أثناء معالجة السؤال: ",
+        "error_response": "حدث خطأ.",
         "input_placeholder": "اكتب سؤالك هنا...",
         "source": "المصدر",
         "page_number": "صفحة رقم",
@@ -60,6 +62,7 @@ UI_TEXTS = {
         "page": "Page",
         "error_pdf": "Error processing PDF file: ",
         "error_question": "Error processing question: ",
+        "error_response": "An error occurred.",
         "input_placeholder": "Type your question here...",
         "source": "Source",
         "page_number": "Page number",
@@ -351,14 +354,9 @@ def display_references(refs):
                 cols = st.columns(2)
                 for idx, page_num in enumerate(sorted(set(page_numbers))):
                     # For Arabic, normalize the page number text (if it is a string)
-                    if interface_language == "العربية":
-                        display_page = normalize_arabic_text(str(page_num))
-                    else:
-                        display_page = str(page_num)
+                    display_page = normalize_arabic_text(str(page_num)) if interface_language == "العربية" else str(page_num)
                     col_idx = idx % 2
                     with cols[col_idx]:
-                        # Attempt to capture screenshot; if OCR-based extraction is needed,
-                        # you could integrate Tesseract here as a fallback.
                         screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_num, "")])
                         if screenshots:
                             st.image(screenshots[0], use_container_width=True)

@@ -10,7 +10,7 @@ import fitz  # PyMuPDF for screenshot capture
 import pdfplumber  # For searching text in PDF
 
 # Adjust import based on your LangChain version.
-# If you receive an import error for FAISS here, try: "from langchain.vectorstores import FAISS"
+# If you receive an import error for FAISS here, try: "from langchain_community.vectorstores import FAISS"
 from langchain_groq import ChatGroq  
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.vectorstores import FAISS  
@@ -238,7 +238,7 @@ with st.sidebar:
             st.session_state.messages = []
             st.session_state.chat_memories = {}
             st.success("تمت إعادة تعيين الدردشة بنجاح." if interface_language == "العربية" else "Chat has been reset successfully.")
-            st.experimental_rerun()
+            # No rerun is forced here
     else:
         st.error("الرجاء إدخال مفاتيح API للمتابعة." if interface_language == "العربية" else "Please enter both API keys to proceed.")
 
@@ -279,7 +279,7 @@ def create_new_chat():
             'first_message': None,
             'visible': False
         }
-    st.experimental_rerun()
+    # Removed st.experimental_rerun() here to avoid recursion
     return chat_id
 
 def update_chat_title(chat_id, message):
@@ -287,8 +287,8 @@ def update_chat_title(chat_id, message):
         title = message.strip().replace('\n', ' ')
         title = title[:50] + '...' if len(title) > 50 else title
         st.session_state.chat_history[chat_id]['first_message'] = title
-        st.experimental_rerun()
-
+        # No immediate rerun is forced here
+       
 def load_chat(chat_id):
     if chat_id in st.session_state.chat_history:
         st.session_state.current_chat_id = chat_id
@@ -302,8 +302,7 @@ def load_chat(chat_id):
                     st.session_state.chat_memories[chat_id].chat_memory.add_user_message(msg["content"])
                 elif msg["role"] == "assistant":
                     st.session_state.chat_memories[chat_id].chat_memory.add_ai_message(msg["content"])
-        st.experimental_rerun()
-
+       
 def format_chat_title(chat):
     display_text = chat['first_message'] or UI_TEXTS[interface_language]['new_chat']
     return display_text[:50] + '...' if len(display_text) > 50 else display_text
@@ -322,8 +321,6 @@ def format_chat_date(timestamp):
 with st.sidebar:
     if st.button(UI_TEXTS[interface_language]['new_chat'], use_container_width=True):
         create_new_chat()
-        st.experimental_rerun()
-
     st.markdown("---")
     st.markdown(f"### {UI_TEXTS[interface_language]['previous_chats']}")
     chats_by_date = {}
@@ -353,7 +350,6 @@ def display_references(refs):
             with st.expander(UI_TEXTS[interface_language]["page_references"]):
                 cols = st.columns(2)
                 for idx, page_num in enumerate(sorted(set(page_numbers))):
-                    # For Arabic, normalize the page number text (if it is a string)
                     display_page = normalize_arabic_text(str(page_num)) if interface_language == "العربية" else str(page_num)
                     col_idx = idx % 2
                     with cols[col_idx]:
@@ -400,8 +396,6 @@ def process_user_input(user_input, is_first_message=False):
         st.session_state.messages.append(assistant_message)
         st.session_state.chat_history[current_chat_id]['messages'] = st.session_state.messages
         display_response_with_references(response, response["answer"])
-        if is_first_message:
-            st.experimental_rerun()
     except Exception as e:
         st.error(f"{UI_TEXTS[interface_language]['error_question']}{str(e)}")
         logging.error("Error in process_user_input: %s", e)

@@ -12,3 +12,5 @@ pypdf
 pymupdf
 pdfplumber
 streamlit-mic-recorder
+arabic-reshaper>=2.1.0
+python-bidi>=0.4.2

@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 # Initialize API key variables
 groq_api_key = "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"
-google_api_key = "AIzaSyDdAiOdIa2I28sphYw36Genb4D--2IN1tU"
+google_api_key = "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"
 
 # Change the page title and icon
 st.set_page_config(
@@ -137,7 +137,7 @@ with st.sidebar:
         os.environ["GOOGLE_API_KEY"] = google_api_key
 
         # Initialize ChatGroq with the provided Groq API key
-        llm = ChatGroq(groq_api_key=groq_api_key, model_name="gemma2-9b-it")
+        llm = ChatGroq(groq_api_key=groq_api_key, model_name="oh-dcft-v3.1-claude-3-5-sonnet-20241022-GGUF")
 
         # تعريف القالب الأساسي للدردشة
         def create_chat_prompt():

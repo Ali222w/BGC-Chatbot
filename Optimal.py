@@ -266,7 +266,7 @@ def update_chat_title(chat_id, message):
     if chat_id in st.session_state.chat_history:
         # تنظيف الرسالة وتقصيرها إذا كانت طويلة
         title = message.strip().replace('\n', ' ')
-        title = title[:50] + '...' if len(title) > 50 else title
+        title = title[:100] + '...' if len(title) > 100 else title
         st.session_state.chat_history[chat_id]['first_message'] = title
         st.rerun()
 

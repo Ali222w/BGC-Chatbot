@@ -13,7 +13,7 @@ import pdfplumber  # For searching text in PDF
 
 # Initialize API key variables
 groq_api_key = "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"
-google_api_key = "LA-7ada8761abf8495e867db09d09a542bcb40edde480354036978f16bcbbed2dfd"
+google_api_key = "AIzaSyDdAiOdIa2I28sphYw36Genb4D--2IN1tU"
 
 # Change the page title and icon
 st.set_page_config(
@@ -87,7 +87,7 @@ with st.sidebar:
         os.environ["GOOGLE_API_KEY"] = google_api_key
 
         # Initialize ChatGroq with the provided Groq API key
-        llm = ChatGroq(groq_api_key=groq_api_key, model_name="Llama-2-70b-chat-hf")
+        llm = ChatGroq(groq_api_key=groq_api_key, model_name="gemma2-9b-it")
 
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([
@@ -133,10 +133,7 @@ with st.sidebar:
                 )
 
                 # Load existing FAISS index with safe deserialization
-                if interface_language == "العربية":
-                    embeddings_path = "embeddings/Arabic/embeddings"
-                else:
-                    embeddings_path = "embeddings/English/embeddings"
+                embeddings_path = "embeddings"  # Path to your embeddings folder
                 try:
                     st.session_state.vectors = FAISS.load_local(
                         embeddings_path,
@@ -169,10 +166,7 @@ with st.sidebar:
         st.error("الرجاء إدخال مفاتيح API للمتابعة." if interface_language == "العربية" else "Please enter both API keys to proceed.")
 
 # Initialize the PDFSearchAndDisplay class with the default PDF file
-if interface_language == "العربية":
-    pdf_path = "BGC-Ar.pdf"
-else:
-    pdf_path = "BGC-En.pdf"
+pdf_path = "BGC.pdf"
 pdf_searcher = PDFSearchAndDisplay()
 
 # Main area for chat interface

@@ -87,7 +87,7 @@ with st.sidebar:
         os.environ["GOOGLE_API_KEY"] = google_api_key
 
         # Initialize ChatGroq with the provided Groq API key
-        llm = ChatGroq(groq_api_key=groq_api_key, model_name="gemma2-9b-it")
+        llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama3-70b-8192")
 
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([

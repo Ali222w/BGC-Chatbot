@@ -13,7 +13,7 @@ import pdfplumber  # For searching text in PDF
 
 # Initialize API key variables
 groq_api_key = "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"
-google_api_key = "AIzaSyDdAiOdIa2I28sphYw36Genb4D--2IN1tU"
+google_api_key = "LA-7ada8761abf8495e867db09d09a542bcb40edde480354036978f16bcbbed2dfd"
 
 # Change the page title and icon
 st.set_page_config(
@@ -87,7 +87,7 @@ with st.sidebar:
         os.environ["GOOGLE_API_KEY"] = google_api_key
 
         # Initialize ChatGroq with the provided Groq API key
-        llm = ChatGroq(groq_api_key=groq_api_key, model_name="gemma2-9b-it")
+        llm = ChatGroq(groq_api_key=groq_api_key, model_name="Llama-2-70b-chat-hf")
 
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([

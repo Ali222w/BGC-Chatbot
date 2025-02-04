@@ -60,13 +60,12 @@ class PDFSearchAndDisplay:
     def capture_screenshots(self, pdf_path, pages):
         doc = fitz.open(pdf_path)
         screenshots = []
-        total_pages = len(doc)
-        
         for page_number, _ in pages:
-            # Validate page number is within document bounds
-            if page_number < 0 or page_number >= total_pages:
+            # Validate page number
+            if page_number < 0 or page_number >= len(doc):
+                st.warning(f"Invalid page number: {page_number}. Skipping this page.")
                 continue  # Skip invalid page numbers
-                
+
             try:
                 page = doc.load_page(page_number)
                 pix = page.get_pixmap()
@@ -75,9 +74,6 @@ class PDFSearchAndDisplay:
                 screenshots.append(screenshot_path)
             except Exception as e:
                 st.error(f"Error capturing screenshot for page {page_number}: {str(e)}")
-                continue
-                
-        doc.close()  # Properly close the document
         return screenshots
 
 # Sidebar configuration

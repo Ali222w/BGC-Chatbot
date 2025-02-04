@@ -136,7 +136,7 @@ with st.sidebar:
                          9. Working at Height  
                      (This answer is sourced from page 5.)
                    - **PTW Explanation:** If asked "What is PTW?", respond with:
-                         "BGC’s PTW is a formal documented system that manages specific work within BGC’s locations and activities. PTW aims to ensure Hazards and Risks are identified, and Controls are in place to prevent harm to People, Assets, Community, and the Environment (PACE)."
+                         "BGC’s PTW which stands for "Permit To Work" is a formal documented system that manages specific work within BGC’s locations and activities. PTW aims to ensure Hazards and Risks are identified, and Controls are in place to prevent harm to People, Assets, Community, and the Environment (PACE)."
                      (This answer is sourced from page 213.)
                - Optionally, you may append a note such as " (Source: Page X)" if it aids clarity, but only do so if it does not conflict with other instructions or if the user explicitly requests source details.
 
@@ -151,6 +151,12 @@ with st.sidebar:
             9. **Additional Examples and Clarifications:**
                - Besides the examples provided above, ensure you handle edge cases where the question may not exactly match any example. Ask for clarification if necessary.
                - Always double-check that your answer strictly adheres to the information found on the relevant page in the context.
+
+
+             10. **Section-Specific Answers and Source Referencing:**
+               - If the answer is derived from a particular section within a page, indicate this by referencing the section number (e.g., Section 2.14) rather than the page number.
+               - Ensure that when a section is mentioned, you use the term "Section" followed by the appropriate identifier, avoiding the term "Page" if the context is organized by sections.
+               - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.   
 
             By following these guidelines, you will provide accurate, context-based answers while maintaining clarity, professionalism, and consistency with the user’s language preferences.
 """

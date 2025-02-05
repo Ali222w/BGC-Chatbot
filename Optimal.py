@@ -1,17 +1,15 @@
 import streamlit as st
 import os
 from langchain_groq import ChatGroq
-from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains import create_retrieval_chain
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from streamlit_mic_recorder import speech_to_text  # Import speech-to-text function
 import fitz  # PyMuPDF for capturing screenshots
 import pdfplumber  # For searching text in PDF
-
-# Import the refine chain for QA from LangChain
-from langchain.chains.question_answering import load_qa_chain
 
 # Initialize API key variables
 groq_api_key = "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"
@@ -93,7 +91,7 @@ with st.sidebar:
 
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """
+              ("system", """
             You are a helpful assistant for Basrah Gas Company (BGC). Your task is to answer questions based on the provided context about BGC. The context is supplied as a documented resource (e.g., a multi-page manual or database) that is segmented by pages. Follow these rules strictly:
 
             1. **Language Handling:**
@@ -159,8 +157,9 @@ with st.sidebar:
                - Ensure that when a section is mentioned, you use the term "Section" followed by the appropriate identifier, avoiding the term "Page" if the context is organized by sections.
                - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.
                
-            Please ensure that if a user asks about the gas table, you return the complete table as provided in the context without truncation.
-            """),
+            By following these guidelines, you will provide accurate, context-based answers while maintaining clarity, professionalism, and consistency with the user’s language preferences.
+"""
+),
             MessagesPlaceholder(variable_name="history"),  # Add chat history to the prompt
             ("human", "{input}"),
             ("system", "Context: {context}"),
@@ -181,12 +180,12 @@ with st.sidebar:
                 try:
                     # Load first FAISS index
                     vectors_1 = FAISS.load_local(
-                        embeddings_path, embeddings, allow_dangerous_deserialization=True
+                    embeddings_path, embeddings, allow_dangerous_deserialization=True
                     )
 
                     # Load second FAISS index
                     vectors_2 = FAISS.load_local(
-                        embeddings_path_2, embeddings, allow_dangerous_deserialization=True
+                    embeddings_path_2, embeddings, allow_dangerous_deserialization=True
                     )
 
                     # Merge both FAISS indexes
@@ -316,15 +315,15 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Process voice input if detected
+# If voice input is detected, process it
 if voice_input:
     st.session_state.messages.append({"role": "user", "content": voice_input})
     with st.chat_message("user"):
         st.markdown(voice_input)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
-        # Create and configure the document chain using the refine chain to handle long contexts
-        document_chain = load_qa_chain(llm, chain_type="refine", prompt=prompt)
+        # Create and configure the document chain and retriever
+        document_chain = create_stuff_documents_chain(llm, prompt)
         retriever = st.session_state.vectors.as_retriever()
         retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
@@ -347,7 +346,7 @@ if voice_input:
         st.session_state.memory.chat_memory.add_user_message(voice_input)
         st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
-        # Check if the response contains any negative phrases and display page references if appropriate
+        # Check if the response contains any negative phrases
         if not any(phrase in assistant_response for phrase in negative_phrases):
             with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                 if "context" in response:
@@ -355,11 +354,12 @@ if voice_input:
                     page_numbers = set()
                     for doc in response["context"]:
                         page_number = doc.metadata.get("page", "unknown")
-                        if page_number != "unknown" and str(page_number).isdigit():
-                            page_numbers.add(int(page_number))
+                        if page_number != "unknown" and str(page_number).isdigit():  # Check if page_number is a valid number
+                            page_numbers.add(int(page_number))  # Convert to integer for sorting
 
+                    # Display the page numbers
                     if page_numbers:
-                        page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
+                        page_numbers_str = ", ".join(map(str, sorted(page_numbers)))  # Sort pages numerically and convert back to strings
                         st.write(f"هذه الإجابة وفقًا للصفحات: {page_numbers_str}" if interface_language == "العربية" else f"This answer is according to pages: {page_numbers_str}")
 
                         # Capture and display screenshots of the relevant pages
@@ -372,6 +372,7 @@ if voice_input:
                 else:
                     st.write("لا يوجد سياق متاح." if interface_language == "العربية" else "No context available.")
     else:
+        # Prompt user to ensure embeddings are loaded
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." if interface_language == "العربية" else "Embeddings not loaded. Please check if the embeddings path is correct."
         )
@@ -381,21 +382,21 @@ if voice_input:
         with st.chat_message("assistant"):
             st.markdown(assistant_response)
 
-# Text input field for user questions
+# Text input field
 if interface_language == "العربية":
     human_input = st.chat_input("اكتب سؤالك هنا...")
 else:
     human_input = st.chat_input("Type your question here...")
 
-# Process text input if detected
+# If text input is detected, process it
 if human_input:
     st.session_state.messages.append({"role": "user", "content": human_input})
     with st.chat_message("user"):
         st.markdown(human_input)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
-        # Create and configure the document chain using the refine chain to handle long contexts
-        document_chain = load_qa_chain(llm, chain_type="refine", prompt=prompt)
+        # Create and configure the document chain and retriever
+        document_chain = create_stuff_documents_chain(llm, prompt)
         retriever = st.session_state.vectors.as_retriever()
         retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
@@ -418,7 +419,7 @@ if human_input:
         st.session_state.memory.chat_memory.add_user_message(human_input)
         st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
-        # Check for negative phrases and display page references if appropriate
+        # Check if the response contains any negative phrases
         if not any(phrase in assistant_response for phrase in negative_phrases):
             with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                 if "context" in response:
@@ -426,11 +427,12 @@ if human_input:
                     page_numbers = set()
                     for doc in response["context"]:
                         page_number = doc.metadata.get("page", "unknown")
-                        if page_number != "unknown" and str(page_number).isdigit():
-                            page_numbers.add(int(page_number))
+                        if page_number != "unknown" and str(page_number).isdigit():  # Check if page_number is a valid number
+                            page_numbers.add(int(page_number))  # Convert to integer for sorting
 
+                    # Display the page numbers
                     if page_numbers:
-                        page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
+                        page_numbers_str = ", ".join(map(str, sorted(page_numbers)))  # Sort pages numerically and convert back to strings
                         st.write(f"هذه الإجابة وفقًا للصفحات: {page_numbers_str}" if interface_language == "العربية" else f"This Answer is According to Pages: {page_numbers_str}")
 
                         # Capture and display screenshots of the relevant pages
@@ -443,6 +445,7 @@ if human_input:
                 else:
                     st.write("لا يوجد سياق متاح." if interface_language == "العربية" else "No context available.")
     else:
+        # Prompt user to ensure embeddings are loaded
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." if interface_language == "العربية" else "Embeddings not loaded. Please check if the embeddings path is correct."
         )

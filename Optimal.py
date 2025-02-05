@@ -13,7 +13,7 @@ import pdfplumber  # For searching text in PDF
 
 # Initialize API key variables
 groq_api_key = "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"
-google_api_key = "AIzaSyDdAiOdIa2I28sphYw36Genb4D--2IN1tU"
+ google_api_key = "AIzaSyDdAiOdIa2I28sphYw36Genb4D--2IN1tU"
 
 # Change the page title and icon
 st.set_page_config(
@@ -91,7 +91,7 @@ with st.sidebar:
 
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([
-              ("system", """
+            ("system", """
             You are a helpful assistant for Basrah Gas Company (BGC). Your task is to answer questions based on the provided context about BGC. The context is supplied as a documented resource (e.g., a multi-page manual or database) that is segmented by pages. Follow these rules strictly:
 
             1. **Language Handling:**
@@ -152,11 +152,11 @@ with st.sidebar:
                - Besides the examples provided above, ensure you handle edge cases where the question may not exactly match any example. Ask for clarification if necessary.
                - Always double-check that your answer strictly adheres to the information found on the relevant page in the context.
                
-            10. **Section-Specific Answers and Source Referencing:**
+                10. **Section-Specific Answers and Source Referencing:**
                - If the answer is derived from a particular section within a page, indicate this by referencing the section number (e.g., Section 2.14) rather than the page number.
                - Ensure that when a section is mentioned, you use the term "Section" followed by the appropriate identifier, avoiding the term "Page" if the context is organized by sections.
-               - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.
-               
+               - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.   
+
             By following these guidelines, you will provide accurate, context-based answers while maintaining clarity, professionalism, and consistency with the user’s language preferences.
 """
 ),
@@ -175,29 +175,17 @@ with st.sidebar:
 
                 # Load existing FAISS index with safe deserialization
                 embeddings_path = "embeddings"  # Path to your embeddings folder
-                embeddings_path_2 = "embeddings_ocr"
-                
                 try:
-                    # Load first FAISS index
-                    vectors_1 = FAISS.load_local(
-                    embeddings_path, embeddings, allow_dangerous_deserialization=True
+                    st.session_state.vectors = FAISS.load_local(
+                        embeddings_path,
+                        embeddings,
+                        allow_dangerous_deserialization=True  # Only use if you trust the source of the embeddings
                     )
-
-                    # Load second FAISS index
-                    vectors_2 = FAISS.load_local(
-                    embeddings_path_2, embeddings, allow_dangerous_deserialization=True
-                    )
-
-                    # Merge both FAISS indexes
-                    vectors_1.merge_from(vectors_2)
-
-                    # Store in session state
-                    st.session_state.vectors = vectors_1
-
                 except Exception as e:
-                    st.error(f"Error loading embeddings: {str(e)}")
+                    st.error(f"حدث خطأ أثناء تحميل التضميدات: {str(e)}" if interface_language == "العربية" else f"Error loading embeddings: {str(e)}")
                     st.session_state.vectors = None
-            # Microphone button in the sidebar
+
+        # Microphone button in the sidebar
         st.markdown("### الإدخال الصوتي" if interface_language == "العربية" else "### Voice Input")
         input_lang_code = "ar" if interface_language == "العربية" else "en"  # Set language code based on interface language
         voice_input = speech_to_text(
@@ -233,7 +221,7 @@ with col1:
 # Display the title and description in the second column
 with col2:
     if interface_language == "العربية":
-        st.title("بوت الدردشة BGC")
+        st.title("محمد الياسين | بوت الدردشة BGC")
         st.write("""
         **مرحبًا!**  
         هذا بوت الدردشة الخاص بشركة غاز البصرة (BGC). يمكنك استخدام هذا البوت للحصول على معلومات حول الشركة وأنشطتها.  
@@ -243,7 +231,7 @@ with col2:
         - سيتم الرد عليك بناءً على المعلومات المتاحة.  
         """)
     else:
-        st.title("BGC ChatBot")
+        st.title("Mohammed Al-Yaseen | BGC ChatBot")
         st.write("""
         **Welcome!**  
         This is the Basrah Gas Company (BGC) ChatBot. You can use this bot to get information about the company and its activities.  

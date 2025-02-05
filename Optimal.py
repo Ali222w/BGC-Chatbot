@@ -175,7 +175,7 @@ with st.sidebar:
 
                 # Load existing FAISS index with safe deserialization
                 embeddings_path = "embeddings"  # Path to your embeddings folder
-                embeddings_path_2 = "embeddings_ocr"
+                embeddings_path_2 = "embeddingsocr"
                 
                 try:
                     # Load first FAISS index

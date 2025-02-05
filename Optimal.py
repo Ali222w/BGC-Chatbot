@@ -61,19 +61,11 @@ class PDFSearchAndDisplay:
         doc = fitz.open(pdf_path)
         screenshots = []
         for page_number, _ in pages:
-            # Validate page number
-            if page_number < 0 or page_number >= len(doc):
-                st.warning(f"Invalid page number: {page_number}. Skipping this page.")
-                continue  # Skip invalid page numbers
-
-            try:
-                page = doc.load_page(page_number)
-                pix = page.get_pixmap()
-                screenshot_path = f"screenshot_page_{page_number}.png"
-                pix.save(screenshot_path)
-                screenshots.append(screenshot_path)
-            except Exception as e:
-                st.error(f"Error capturing screenshot for page {page_number}: {str(e)}")
+            page = doc.load_page(page_number)
+            pix = page.get_pixmap()
+            screenshot_path = f"screenshot_page_{page_number}.png"
+            pix.save(screenshot_path)
+            screenshots.append(screenshot_path)
         return screenshots
 
 # Sidebar configuration
@@ -99,7 +91,7 @@ with st.sidebar:
 
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """
+              ("system", """
             You are a helpful assistant for Basrah Gas Company (BGC). Your task is to answer questions based on the provided context about BGC. The context is supplied as a documented resource (e.g., a multi-page manual or database) that is segmented by pages. Follow these rules strictly:
 
             1. **Language Handling:**
@@ -144,7 +136,7 @@ with st.sidebar:
                          9. Working at Height  
                      (This answer is sourced from page 5.)
                    - **PTW Explanation:** If asked "What is PTW?", respond with:
-                         "BGC’s PTW which stands for "Permit To Work" is a formal documented system that manages specific work within BGC’s locations and activities. PTW aims to ensure Hazards and Risks are identified, and Controls are in place to prevent harm to People, Assets, Community, and the Environment (PACE)."
+                         "BGC’s PTW is a formal documented system that manages specific work within BGC’s locations and activities. PTW aims to ensure Hazards and Risks are identified, and Controls are in place to prevent harm to People, Assets, Community, and the Environment (PACE)."
                      (This answer is sourced from page 213.)
                - Optionally, you may append a note such as " (Source: Page X)" if it aids clarity, but only do so if it does not conflict with other instructions or if the user explicitly requests source details.
 
@@ -159,13 +151,12 @@ with st.sidebar:
             9. **Additional Examples and Clarifications:**
                - Besides the examples provided above, ensure you handle edge cases where the question may not exactly match any example. Ask for clarification if necessary.
                - Always double-check that your answer strictly adheres to the information found on the relevant page in the context.
-
-
-             10. **Section-Specific Answers and Source Referencing:**
+               
+            10. **Section-Specific Answers and Source Referencing:**
                - If the answer is derived from a particular section within a page, indicate this by referencing the section number (e.g., Section 2.14) rather than the page number.
                - Ensure that when a section is mentioned, you use the term "Section" followed by the appropriate identifier, avoiding the term "Page" if the context is organized by sections.
-               - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.   
-
+               - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.
+               
             By following these guidelines, you will provide accurate, context-based answers while maintaining clarity, professionalism, and consistency with the user’s language preferences.
 """
 ),
@@ -184,17 +175,29 @@ with st.sidebar:
 
                 # Load existing FAISS index with safe deserialization
                 embeddings_path = "embeddings"  # Path to your embeddings folder
+                embeddings_path_2 = "embeddings_ocr"
+                
                 try:
-                    st.session_state.vectors = FAISS.load_local(
-                        embeddings_path,
-                        embeddings,
-                        allow_dangerous_deserialization=True  # Only use if you trust the source of the embeddings
+                    # Load first FAISS index
+                    vectors_1 = FAISS.load_local(
+                    embeddings_path, embeddings, allow_dangerous_deserialization=True
                     )
-                except Exception as e:
-                    st.error(f"حدث خطأ أثناء تحميل التضميدات: {str(e)}" if interface_language == "العربية" else f"Error loading embeddings: {str(e)}")
-                    st.session_state.vectors = None
 
-        # Microphone button in the sidebar
+                    # Load second FAISS index
+                    vectors_2 = FAISS.load_local(
+                    embeddings_path_2, embeddings, allow_dangerous_deserialization=True
+                    )
+
+                    # Merge both FAISS indexes
+                    vectors_1.merge_from(vectors_2)
+
+                    # Store in session state
+                    st.session_state.vectors = vectors_1
+
+                except Exception as e:
+                    st.error(f"Error loading embeddings: {str(e)}")
+                    st.session_state.vectors = None
+            # Microphone button in the sidebar
         st.markdown("### الإدخال الصوتي" if interface_language == "العربية" else "### Voice Input")
         input_lang_code = "ar" if interface_language == "العربية" else "en"  # Set language code based on interface language
         voice_input = speech_to_text(
@@ -230,7 +233,7 @@ with col1:
 # Display the title and description in the second column
 with col2:
     if interface_language == "العربية":
-        st.title("محمد الياسين | بوت الدردشة BGC")
+        st.title("بوت الدردشة BGC")
         st.write("""
         **مرحبًا!**  
         هذا بوت الدردشة الخاص بشركة غاز البصرة (BGC). يمكنك استخدام هذا البوت للحصول على معلومات حول الشركة وأنشطتها.  
@@ -240,7 +243,7 @@ with col2:
         - سيتم الرد عليك بناءً على المعلومات المتاحة.  
         """)
     else:
-        st.title("Mohammed Al-Yaseen | BGC ChatBot")
+        st.title("BGC ChatBot")
         st.write("""
         **Welcome!**  
         This is the Basrah Gas Company (BGC) ChatBot. You can use this bot to get information about the company and its activities.  

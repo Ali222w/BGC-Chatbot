@@ -61,8 +61,8 @@ class PDFSearchAndDisplay:
         doc = fitz.open(pdf_path)
         screenshots = []
         for page_number, _ in pages:
-            # Adjust for human-friendly page numbers (starting at 1) by subtracting 1
-            actual_page = page_number - 1 if page_number > 0 else page_number
+            # Instead of adjusting (subtracting 1), use the page_number as provided
+            actual_page = page_number  
             if actual_page < 0 or actual_page >= len(doc):
                 st.warning(f"Invalid page number: {page_number}. Skipping this page.")
                 continue  # Skip invalid page numbers
@@ -461,3 +461,4 @@ if human_input:
         )
         with st.chat_message("assistant"):
             st.markdown(assistant_response)
+

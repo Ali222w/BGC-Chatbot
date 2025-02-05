@@ -61,11 +61,20 @@ class PDFSearchAndDisplay:
         doc = fitz.open(pdf_path)
         screenshots = []
         for page_number, _ in pages:
-            page = doc.load_page(page_number)
-            pix = page.get_pixmap()
-            screenshot_path = f"screenshot_page_{page_number}.png"
-            pix.save(screenshot_path)
-            screenshots.append(screenshot_path)
+            # Adjust for human-friendly page numbers (starting at 1) by subtracting 1
+            actual_page = page_number - 1 if page_number > 0 else page_number
+            if actual_page < 0 or actual_page >= len(doc):
+                st.warning(f"Invalid page number: {page_number}. Skipping this page.")
+                continue  # Skip invalid page numbers
+
+            try:
+                page = doc.load_page(actual_page)
+                pix = page.get_pixmap()
+                screenshot_path = f"screenshot_page_{page_number}.png"
+                pix.save(screenshot_path)
+                screenshots.append(screenshot_path)
+            except Exception as e:
+                st.error(f"Error capturing screenshot for page {page_number}: {str(e)}")
         return screenshots
 
 # Sidebar configuration
@@ -105,7 +114,7 @@ with st.sidebar:
                - When answering a question, refer only to the relevant section or page of this context.
                - If the question spans multiple sections or pages, determine which page is most directly related to the question. If ambiguity remains, ask the user for clarification.
 
-            3. **Handling Unclear, Ambiguous, or Insufficient Information:**
+            3. **Handling Unclear, Ambiguous or Insufficient Information:**
                - If a question is unclear or lacks sufficient context, respond with:
                  - In English: "I'm sorry, I couldn't understand your question. Could you please provide more details?"
                  - In Arabic: "عذرًا، لم أتمكن من فهم سؤالك. هل يمكنك تقديم المزيد من التفاصيل؟"
@@ -136,7 +145,7 @@ with st.sidebar:
                          9. Working at Height  
                      (This answer is sourced from page 5.)
                    - **PTW Explanation:** If asked "What is PTW?", respond with:
-                         "BGC’s PTW is a formal documented system that manages specific work within BGC’s locations and activities. PTW aims to ensure Hazards and Risks are identified, and Controls are in place to prevent harm to People, Assets, Community, and the Environment (PACE)."
+                         "BGC’s PTW which stands for "Permit To Work" is a formal documented system that manages specific work within BGC’s locations and activities. PTW aims to ensure Hazards and Risks are identified, and Controls are in place to prevent harm to People, Assets, Community, and the Environment (PACE)."
                      (This answer is sourced from page 213.)
                - Optionally, you may append a note such as " (Source: Page X)" if it aids clarity, but only do so if it does not conflict with other instructions or if the user explicitly requests source details.
 
@@ -151,8 +160,9 @@ with st.sidebar:
             9. **Additional Examples and Clarifications:**
                - Besides the examples provided above, ensure you handle edge cases where the question may not exactly match any example. Ask for clarification if necessary.
                - Always double-check that your answer strictly adheres to the information found on the relevant page in the context.
-               
-                10. **Section-Specific Answers and Source Referencing:**
+
+
+             10. **Section-Specific Answers and Source Referencing:**
                - If the answer is derived from a particular section within a page, indicate this by referencing the section number (e.g., Section 2.14) rather than the page number.
                - Ensure that when a section is mentioned, you use the term "Section" followed by the appropriate identifier, avoiding the term "Page" if the context is organized by sections.
                - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.   
@@ -206,6 +216,15 @@ with st.sidebar:
     else:
         st.error("الرجاء إدخال مفاتيح API للمتابعة." if interface_language == "العربية" else "Please enter both API keys to proceed.")
 
+    # -------------------------------
+    # NEW FEATURE: Chat History in Sidebar
+    with st.expander("سجل الدردشة" if interface_language == "العربية" else "Chat History", expanded=True):
+        if "messages" in st.session_state and st.session_state.messages:
+            for i, message in enumerate(st.session_state.messages):
+                st.write(f"**{message['role'].capitalize()}**: {message['content']}")
+        else:
+            st.write("لا يوجد سجل للدردشة." if interface_language == "العربية" else "No chat history available.")
+
 # Initialize the PDFSearchAndDisplay class with the default PDF file
 pdf_path = "BGC.pdf"
 pdf_searcher = PDFSearchAndDisplay()
@@ -221,7 +240,7 @@ with col1:
 # Display the title and description in the second column
 with col2:
     if interface_language == "العربية":
-        st.title("محمد الياسين | بوت الدردشة BGC")
+        st.title(" بوت الدردشة BGC")
         st.write("""
         **مرحبًا!**  
         هذا بوت الدردشة الخاص بشركة غاز البصرة (BGC). يمكنك استخدام هذا البوت للحصول على معلومات حول الشركة وأنشطتها.  
@@ -231,7 +250,7 @@ with col2:
         - سيتم الرد عليك بناءً على المعلومات المتاحة.  
         """)
     else:
-        st.title("Mohammed Al-Yaseen | BGC ChatBot")
+        st.title("BGC ChatBot")
         st.write("""
         **Welcome!**  
         This is the Basrah Gas Company (BGC) ChatBot. You can use this bot to get information about the company and its activities.  
@@ -298,7 +317,7 @@ negative_phrases = [
     "هل يمكنك تقديم المزيد"  # إضافة هذه العبارة
 ]
 
-# Display chat history
+# Display chat history in the main area
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])

@@ -322,7 +322,8 @@ with st.sidebar:
         # Reset button in the sidebar
         if st.button("إعادة تعيين الدردشة" if interface_language == "العربية" else "Reset Chat"):
             st.session_state.messages = []  # Clear chat history
-            st.session_state.memory.clear()  # Clear memory
+            # Clear the per-chat memory instead of the global memory
+            st.session_state.chat_memories[st.session_state.current_chat_id].clear()
             st.success("تمت إعادة تعيين الدردشة بنجاح." if interface_language == "العربية" else "Chat has been reset successfully.")
             st.rerun()  # Rerun the app to reflect changes immediately
     else:
@@ -398,7 +399,7 @@ with col2:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Initialize memory if not already done
+# (The global memory initialization below is no longer used, as each chat now uses its own memory.)
 if "memory" not in st.session_state:
     st.session_state.memory = ConversationBufferMemory(
         memory_key="history",
@@ -494,7 +495,7 @@ if voice_input:
         response = retrieval_chain.invoke({
             "input": voice_input,
             "context": retriever.get_relevant_documents(voice_input),
-            "history": st.session_state.memory.chat_memory.messages  # Include chat history
+            "history": st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.messages  # Include per-chat history
         })
         assistant_response = response["answer"]
 
@@ -507,9 +508,9 @@ if voice_input:
         # Update chat history with the new assistant message
         st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
-        # Add user and assistant messages to memory
-        st.session_state.memory.chat_memory.add_user_message(voice_input)
-        st.session_state.memory.chat_memory.add_ai_message(assistant_response)
+        # Add user and assistant messages to the per-chat memory
+        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_user_message(voice_input)
+        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_ai_message(assistant_response)
 
         # Process page references if response is clear
         if not any(phrase in assistant_response for phrase in negative_phrases):
@@ -576,7 +577,7 @@ if human_input:
         response = retrieval_chain.invoke({
             "input": human_input,
             "context": retriever.get_relevant_documents(human_input),
-            "history": st.session_state.memory.chat_memory.messages  # Include chat history
+            "history": st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.messages  # Include per-chat history
         })
         assistant_response = response["answer"]
 
@@ -588,8 +589,8 @@ if human_input:
         
         st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
-        st.session_state.memory.chat_memory.add_user_message(human_input)
-        st.session_state.memory.chat_memory.add_ai_message(assistant_response)
+        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_user_message(human_input)
+        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_ai_message(assistant_response)
 
         if not any(phrase in assistant_response for phrase in negative_phrases):
             page_numbers = set()

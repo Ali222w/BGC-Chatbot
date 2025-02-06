@@ -59,7 +59,8 @@ def create_new_chat():
             'timestamp': datetime.now(),
             'first_message': None,  # Start with no title
             'visible': False,  # Hide from chat list initially
-            'page_references': ""  # To store page references if any
+            'page_references': "",  # To store page references if any
+            'page_screenshots': []  # To store screenshot paths for page references
         }
     st.rerun()
     return chat_id
@@ -459,13 +460,16 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- Display stored page references if available ---
+# --- Display stored page references (with screenshots) if available ---
 current_chat = st.session_state.chat_history.get(st.session_state.current_chat_id, {})
 if current_chat.get("page_references"):
     with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
         st.write("هذه الإجابة وفقًا للصفحات: " + current_chat["page_references"]
                  if interface_language == "العربية"
                  else "This answer is according to pages: " + current_chat["page_references"])
+        if current_chat.get("page_screenshots"):
+            for screenshot in current_chat["page_screenshots"]:
+                st.image(screenshot)
 # --- End of stored references display ---
 
 # If voice input is detected, process it
@@ -517,17 +521,18 @@ if voice_input:
                         page_numbers.add(int(page_number))
             if page_numbers:
                 page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
+                screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_number, "") for page_number in page_numbers])
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = screenshots
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                     st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str
                              if interface_language == "العربية"
                              else "This answer is according to pages: " + page_numbers_str)
-                    highlighted_pages = [(page_number, "") for page_number in page_numbers]
-                    screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
                     for screenshot in screenshots:
                         st.image(screenshot)
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = []
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                     st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية"
                              else "No valid page numbers available in the context.")
@@ -595,17 +600,18 @@ if human_input:
                         page_numbers.add(int(page_number))
             if page_numbers:
                 page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
+                screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_number, "") for page_number in page_numbers])
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = screenshots
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                     st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str
                              if interface_language == "العربية"
                              else "This answer is according to pages: " + page_numbers_str)
-                    highlighted_pages = [(page_number, "") for page_number in page_numbers]
-                    screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
                     for screenshot in screenshots:
                         st.image(screenshot)
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = []
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                     st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية"
                              else "No valid page numbers available in the context.")

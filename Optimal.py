@@ -489,7 +489,7 @@ if voice_input:
     if len(st.session_state.messages) == 1:
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = voice_input
         st.session_state.chat_history[st.session_state.current_chat_id]['visible'] = True
-        st.experimental_rerun()  # Immediately update the chat title in the sidebar
+        st.rerun()  # Immediately update the chat title in the sidebar
     st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
@@ -572,7 +572,7 @@ if human_input:
     if len(st.session_state.messages) == 1:
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = human_input
         st.session_state.chat_history[st.session_state.current_chat_id]['visible'] = True
-        st.experimental_rerun()  # Immediately update the chat title in the sidebar
+        st.rerun()  # Immediately update the chat title in the sidebar
     st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:

@@ -52,13 +52,13 @@ def create_new_chat():
         return_messages=True
     )
     
-    # Initialize chat but don't show in history until first message
+    # Initialize chat and list it immediately with default title "New Chat"
     if chat_id not in st.session_state.chat_history:
         st.session_state.chat_history[chat_id] = {
             'messages': [],
             'timestamp': datetime.now(),
-            'first_message': None,  # Start with no title
-            'visible': False,  # Hide from chat list initially
+            'first_message': UI_TEXTS["English"]['new_chat'] if "English" in UI_TEXTS and st.sidebar.selectbox("Interface Language", ["English", "العربية"])=="English" else UI_TEXTS["العربية"]['new_chat'],
+            'visible': True,  # Now visible immediately
             'page_references': "",  # To store page references if any
             'page_screenshots': []  # To store screenshot paths for page references
         }
@@ -339,9 +339,9 @@ with st.sidebar:
     
     # Group chats by date
     chats_by_date = {}
+    # Modified filtering: list any chat that is marked as visible
     for chat_id, chat_data in st.session_state.chat_history.items():
-        # Only show chats that have messages and are marked as visible
-        if chat_data['visible'] and chat_data['messages']:
+        if chat_data['visible']:
             date = chat_data['timestamp'].date()
             chats_by_date.setdefault(date, []).append((chat_id, chat_data))
     

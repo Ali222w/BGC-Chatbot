@@ -75,7 +75,6 @@ def update_chat_title(chat_id, message):
         title = message.strip().replace('\n', ' ')
         title = title[:50] + '...' if len(title) > 50 else title
         st.session_state.chat_history[chat_id]['first_message'] = title
-        st.rerun()
 
 def load_chat(chat_id):
     """تحميل محادثة محددة"""
@@ -562,15 +561,21 @@ if st.session_state.get('interface_language', 'English') == "العربية":
 else:
     human_input = st.chat_input("Type your question here...")
 
-# Process text input
+# If text input is detected, process it
 if human_input:
-    # Update chat title immediately if this is the first message
-    if st.session_state.current_chat_id and len(st.session_state.chat_history[st.session_state.current_chat_id]['messages']) == 0:
-        update_chat_title(st.session_state.current_chat_id, human_input)
-    
-    # Add message to chat history
     st.session_state.messages.append({"role": "user", "content": human_input})
-    st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
+    with st.chat_message("user"):
+        st.markdown(human_input)
+    
+    # Update chat title immediately if this is the first message
+    if st.session_state.current_chat_id:
+        if len(st.session_state.chat_history[st.session_state.current_chat_id]['messages']) == 0:
+            update_chat_title(st.session_state.current_chat_id, human_input)
+    
+    if len(st.session_state.messages) == 1:
+        st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = human_input
+        st.session_state.chat_history[st.session_state.current_chat_id]['visible'] = True
+    st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
         # Create and configure the document chain and retriever

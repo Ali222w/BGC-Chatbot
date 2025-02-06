@@ -59,7 +59,7 @@ def create_new_chat():
             'timestamp': datetime.now(),
             'first_message': None,  # Start with no title
             'visible': False,  # Hide from chat list initially
-            'page_references': ""  # Store page references if any
+            'page_references': ""  # To store page references if any
         }
     st.rerun()
     return chat_id
@@ -463,10 +463,9 @@ for message in st.session_state.messages:
 current_chat = st.session_state.chat_history.get(st.session_state.current_chat_id, {})
 if current_chat.get("page_references"):
     with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
-        if interface_language == "العربية":
-            st.write("هذه الإجابة وفقًا للصفحات: " + current_chat["page_references"])
-        else:
-            st.write("This answer is according to pages: " + current_chat["page_references"])
+        st.write("هذه الإجابة وفقًا للصفحات: " + current_chat["page_references"]
+                 if interface_language == "العربية"
+                 else "This answer is according to pages: " + current_chat["page_references"])
 # --- End of stored references display ---
 
 # If voice input is detected, process it
@@ -479,7 +478,7 @@ if voice_input:
     if len(st.session_state.messages) == 1:
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = voice_input
         st.session_state.chat_history[st.session_state.current_chat_id]['visible'] = True
-    st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
+    st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
         # Create and configure the document chain and retriever
@@ -495,7 +494,6 @@ if voice_input:
         })
         assistant_response = response["answer"]
 
-        # Append and display assistant's response
         st.session_state.messages.append(
             {"role": "assistant", "content": assistant_response}
         )
@@ -503,13 +501,13 @@ if voice_input:
             st.markdown(assistant_response)
 
         # Update chat history with the new assistant message
-        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
+        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
         # Add user and assistant messages to memory
         st.session_state.memory.chat_memory.add_user_message(voice_input)
         st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
-        # Check if the response contains any negative phrases and process page references
+        # Process page references if response is clear
         if not any(phrase in assistant_response for phrase in negative_phrases):
             page_numbers = set()
             if "context" in response:
@@ -519,14 +517,11 @@ if voice_input:
                         page_numbers.add(int(page_number))
             if page_numbers:
                 page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
-                # Store the references in the chat history
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
-                    if interface_language == "العربية":
-                        st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str)
-                    else:
-                        st.write("This answer is according to pages: " + page_numbers_str)
-                    # Capture and display screenshots of the relevant pages
+                    st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str
+                             if interface_language == "العربية"
+                             else "This answer is according to pages: " + page_numbers_str)
                     highlighted_pages = [(page_number, "") for page_number in page_numbers]
                     screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
                     for screenshot in screenshots:
@@ -534,17 +529,20 @@ if voice_input:
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
-                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية" else "No valid page numbers available in the context.")
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية"
+                             else "No valid page numbers available in the context.")
     else:
         assistant_response = (
-            "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." if interface_language == "العربية" else "Embeddings not loaded. Please check if the embeddings path is correct."
+            "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." 
+            if interface_language == "العربية" 
+            else "Embeddings not loaded. Please check if the embeddings path is correct."
         )
         st.session_state.messages.append(
             {"role": "assistant", "content": assistant_response}
         )
         with st.chat_message("assistant"):
             st.markdown(assistant_response)
-        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
+        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
 # Text input field
 if interface_language == "العربية":
@@ -558,11 +556,10 @@ if human_input:
     with st.chat_message("user"):
         st.markdown(human_input)
     
-    # Update chat history for current chat (and set title if this is the first message)
     if len(st.session_state.messages) == 1:
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = human_input
         st.session_state.chat_history[st.session_state.current_chat_id]['visible'] = True
-    st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
+    st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
         # Create and configure the document chain and retriever
@@ -578,21 +575,17 @@ if human_input:
         })
         assistant_response = response["answer"]
 
-        # Append and display assistant's response
         st.session_state.messages.append(
             {"role": "assistant", "content": assistant_response}
         )
         with st.chat_message("assistant"):
             st.markdown(assistant_response)
         
-        # Update chat history with the new assistant message
-        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
+        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
-        # Add user and assistant messages to memory
         st.session_state.memory.chat_memory.add_user_message(human_input)
         st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
-        # Check if the response contains any negative phrases and process page references
         if not any(phrase in assistant_response for phrase in negative_phrases):
             page_numbers = set()
             if "context" in response:
@@ -602,14 +595,11 @@ if human_input:
                         page_numbers.add(int(page_number))
             if page_numbers:
                 page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
-                # Store the references in the chat history
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
-                    if interface_language == "العربية":
-                        st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str)
-                    else:
-                        st.write("This answer is according to pages: " + page_numbers_str)
-                    # Capture and display screenshots of the relevant pages
+                    st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str
+                             if interface_language == "العربية"
+                             else "This answer is according to pages: " + page_numbers_str)
                     highlighted_pages = [(page_number, "") for page_number in page_numbers]
                     screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
                     for screenshot in screenshots:
@@ -617,14 +607,17 @@ if human_input:
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
                 with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
-                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية" else "No valid page numbers available in the context.")
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية"
+                             else "No valid page numbers available in the context.")
     else:
         assistant_response = (
-            "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." if interface_language == "العربية" else "Embeddings not loaded. Please check if the embeddings path is correct."
+            "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." 
+            if interface_language == "العربية" 
+            else "Embeddings not loaded. Please check if the embeddings path is correct."
         )
         st.session_state.messages.append(
             {"role": "assistant", "content": assistant_response}
         )
         with st.chat_message("assistant"):
             st.markdown(assistant_response)
-        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = st.session_state.messages
+        st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)

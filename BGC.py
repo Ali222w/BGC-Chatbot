@@ -52,16 +52,13 @@ def create_new_chat():
         return_messages=True
     )
     
-    # Use the stored interface language from the sidebar
-    language = st.session_state.get('interface_language', 'English')
-    
-    # Initialize chat and list it immediately with default title "New Chat"
+    # Initialize chat but don't show in history until first message
     if chat_id not in st.session_state.chat_history:
         st.session_state.chat_history[chat_id] = {
             'messages': [],
             'timestamp': datetime.now(),
-            'first_message': UI_TEXTS[language]['new_chat'],
-            'visible': True,  # Now visible immediately
+            'first_message': None,  # Start with no title
+            'visible': False,  # Hide from chat list initially
             'page_references': "",  # To store page references if any
             'page_screenshots': []  # To store screenshot paths for page references
         }
@@ -105,8 +102,7 @@ def format_chat_title(chat):
     if display_text:
         display_text = display_text[:50] + '...' if len(display_text) > 50 else display_text
     else:
-        language = st.session_state.get('interface_language', 'English')
-        display_text = UI_TEXTS[language]['new_chat']
+        display_text = UI_TEXTS[interface_language]['new_chat']
     return display_text
 
 def format_chat_date(timestamp):
@@ -114,11 +110,10 @@ def format_chat_date(timestamp):
     today = datetime.now().date()
     chat_date = timestamp.date()
     
-    language = st.session_state.get('interface_language', 'English')
     if chat_date == today:
-        return UI_TEXTS[language]['today']
+        return UI_TEXTS[interface_language]['today']
     elif chat_date == today - timedelta(days=1):
-        return UI_TEXTS[language]['yesterday']
+        return UI_TEXTS[interface_language]['yesterday']
     else:
         return timestamp.strftime('%Y-%m-%d')
 
@@ -187,8 +182,6 @@ class PDFSearchAndDisplay:
 with st.sidebar:
     # Language selection dropdown
     interface_language = st.selectbox("Interface Language", ["English", "العربية"])
-    # Store the language choice in session state for later use
-    st.session_state['interface_language'] = interface_language
 
     # Apply CSS direction based on selected language
     if interface_language == "العربية":
@@ -208,7 +201,7 @@ with st.sidebar:
 
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """
+              ("system", """
             You are a helpful assistant for Basrah Gas Company (BGC). Your task is to answer questions based on the provided context about BGC. The context is supplied as a documented resource (e.g., a multi-page manual or database) that is segmented by pages. Follow these rules strictly:
 
             1. **Language Handling:**
@@ -275,7 +268,8 @@ with st.sidebar:
                - In cases where both page and section references are relevant, include both details appropriately to maintain clarity for the user.
                
             By following these guidelines, you will provide accurate, context-based answers while maintaining clarity, professionalism, and consistency with the user’s language preferences.
-            """),
+"""
+),
             MessagesPlaceholder(variable_name="history"),  # Add chat history to the prompt
             ("human", "{input}"),
             ("system", "Context: {context}"),
@@ -328,8 +322,7 @@ with st.sidebar:
         # Reset button in the sidebar
         if st.button("إعادة تعيين الدردشة" if interface_language == "العربية" else "Reset Chat"):
             st.session_state.messages = []  # Clear chat history
-            # Clear the per-chat memory instead of the global memory
-            st.session_state.chat_memories[st.session_state.current_chat_id].clear()
+            st.session_state.memory.clear()  # Clear memory
             st.success("تمت إعادة تعيين الدردشة بنجاح." if interface_language == "العربية" else "Chat has been reset successfully.")
             st.rerun()  # Rerun the app to reflect changes immediately
     else:
@@ -345,9 +338,9 @@ with st.sidebar:
     
     # Group chats by date
     chats_by_date = {}
-    # Modified filtering: list any chat that is marked as visible
     for chat_id, chat_data in st.session_state.chat_history.items():
-        if chat_data['visible']:
+        # Only show chats that have messages and are marked as visible
+        if chat_data['visible'] and chat_data['messages']:
             date = chat_data['timestamp'].date()
             chats_by_date.setdefault(date, []).append((chat_id, chat_data))
     
@@ -378,7 +371,7 @@ with col1:
 
 # Display the title and description in the second column
 with col2:
-    if st.session_state.get('interface_language', 'English') == "العربية":
+    if interface_language == "العربية":
         st.title("بوت الدردشة BGC")
         st.write("""
         **مرحبًا!**  
@@ -405,7 +398,7 @@ with col2:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# (The global memory initialization below is no longer used, as each chat now uses its own memory.)
+# Initialize memory if not already done
 if "memory" not in st.session_state:
     st.session_state.memory = ConversationBufferMemory(
         memory_key="history",
@@ -470,9 +463,9 @@ for message in st.session_state.messages:
 # --- Display stored page references (with screenshots) if available ---
 current_chat = st.session_state.chat_history.get(st.session_state.current_chat_id, {})
 if current_chat.get("page_references"):
-    with st.expander("مراجع الصفحات" if st.session_state.get('interface_language', 'English') == "العربية" else "Page References"):
+    with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
         st.write("هذه الإجابة وفقًا للصفحات: " + current_chat["page_references"]
-                 if st.session_state.get('interface_language', 'English') == "العربية"
+                 if interface_language == "العربية"
                  else "This answer is according to pages: " + current_chat["page_references"])
         if current_chat.get("page_screenshots"):
             for screenshot in current_chat["page_screenshots"]:
@@ -501,7 +494,7 @@ if voice_input:
         response = retrieval_chain.invoke({
             "input": voice_input,
             "context": retriever.get_relevant_documents(voice_input),
-            "history": st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.messages  # Include per-chat history
+            "history": st.session_state.memory.chat_memory.messages  # Include chat history
         })
         assistant_response = response["answer"]
 
@@ -514,9 +507,9 @@ if voice_input:
         # Update chat history with the new assistant message
         st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
-        # Add user and assistant messages to the per-chat memory
-        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_user_message(voice_input)
-        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_ai_message(assistant_response)
+        # Add user and assistant messages to memory
+        st.session_state.memory.chat_memory.add_user_message(voice_input)
+        st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
         # Process page references if response is clear
         if not any(phrase in assistant_response for phrase in negative_phrases):
@@ -531,22 +524,22 @@ if voice_input:
                 screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_number, "") for page_number in page_numbers])
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = screenshots
-                with st.expander("مراجع الصفحات" if st.session_state.get('interface_language', 'English') == "العربية" else "Page References"):
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                     st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str
-                             if st.session_state.get('interface_language', 'English') == "العربية"
+                             if interface_language == "العربية"
                              else "This answer is according to pages: " + page_numbers_str)
                     for screenshot in screenshots:
                         st.image(screenshot)
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = []
-                with st.expander("مراجع الصفحات" if st.session_state.get('interface_language', 'English') == "العربية" else "Page References"):
-                    st.write("لا توجد أرقام صفحات صالحة في السياق." if st.session_state.get('interface_language', 'English') == "العربية"
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية"
                              else "No valid page numbers available in the context.")
     else:
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." 
-            if st.session_state.get('interface_language', 'English') == "العربية" 
+            if interface_language == "العربية" 
             else "Embeddings not loaded. Please check if the embeddings path is correct."
         )
         st.session_state.messages.append(
@@ -557,7 +550,7 @@ if voice_input:
         st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
 # Text input field
-if st.session_state.get('interface_language', 'English') == "العربية":
+if interface_language == "العربية":
     human_input = st.chat_input("اكتب سؤالك هنا...")
 else:
     human_input = st.chat_input("Type your question here...")
@@ -583,7 +576,7 @@ if human_input:
         response = retrieval_chain.invoke({
             "input": human_input,
             "context": retriever.get_relevant_documents(human_input),
-            "history": st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.messages  # Include per-chat history
+            "history": st.session_state.memory.chat_memory.messages  # Include chat history
         })
         assistant_response = response["answer"]
 
@@ -595,8 +588,8 @@ if human_input:
         
         st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
-        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_user_message(human_input)
-        st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_ai_message(assistant_response)
+        st.session_state.memory.chat_memory.add_user_message(human_input)
+        st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
         if not any(phrase in assistant_response for phrase in negative_phrases):
             page_numbers = set()
@@ -610,22 +603,22 @@ if human_input:
                 screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_number, "") for page_number in page_numbers])
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = screenshots
-                with st.expander("مراجع الصفحات" if st.session_state.get('interface_language', 'English') == "العربية" else "Page References"):
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
                     st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str
-                             if st.session_state.get('interface_language', 'English') == "العربية"
+                             if interface_language == "العربية"
                              else "This answer is according to pages: " + page_numbers_str)
                     for screenshot in screenshots:
                         st.image(screenshot)
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = []
-                with st.expander("مراجع الصفحات" if st.session_state.get('interface_language', 'English') == "العربية" else "Page References"):
-                    st.write("لا توجد أرقام صفحات صالحة في السياق." if st.session_state.get('interface_language', 'English') == "العربية"
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية"
                              else "No valid page numbers available in the context.")
     else:
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." 
-            if st.session_state.get('interface_language', 'English') == "العربية" 
+            if interface_language == "العربية" 
             else "Embeddings not loaded. Please check if the embeddings path is correct."
         )
         st.session_state.messages.append(

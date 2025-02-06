@@ -75,6 +75,7 @@ def update_chat_title(chat_id, message):
         title = message.strip().replace('\n', ' ')
         title = title[:50] + '...' if len(title) > 50 else title
         st.session_state.chat_history[chat_id]['first_message'] = title
+        st.rerun()
 
 def load_chat(chat_id):
     """تحميل محادثة محددة"""
@@ -566,11 +567,6 @@ if human_input:
     st.session_state.messages.append({"role": "user", "content": human_input})
     with st.chat_message("user"):
         st.markdown(human_input)
-    
-    # Update chat title immediately if this is the first message
-    if st.session_state.current_chat_id:
-        if len(st.session_state.chat_history[st.session_state.current_chat_id]['messages']) == 0:
-            update_chat_title(st.session_state.current_chat_id, human_input)
     
     if len(st.session_state.messages) == 1:
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = human_input

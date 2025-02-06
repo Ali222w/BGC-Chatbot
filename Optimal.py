@@ -75,7 +75,7 @@ def update_chat_title(chat_id, message):
         title = message.strip().replace('\n', ' ')
         title = title[:50] + '...' if len(title) > 50 else title
         st.session_state.chat_history[chat_id]['first_message'] = title
-        st.rerun()
+        # Removed st.rerun() to avoid interrupting the response rendering
 
 def load_chat(chat_id):
     """تحميل محادثة محددة"""

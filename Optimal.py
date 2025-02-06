@@ -241,6 +241,7 @@ with col2:
         - اكتب سؤالك في مربع النص أدناه.  
         - أو استخدم زر المايكروفون للتحدث مباشرة.  
         - سيتم الرد عليك بناءً على المعلومات المتاحة.  
+        - تنبيه: بوت الدردشة هذا لا يزال نموذجًا أوليًا. على الرغم من سعينا للدقة، قد لا تكون الإجابات صحيحة بنسبة 100٪. يُرجى التحقق من المعلومات وفقًا لذلك.
         """)
     else:
         st.title("BGC ChatBot")
@@ -251,6 +252,7 @@ with col2:
         - Type your question in the text box below.  
         - Or use the microphone button to speak directly.  
         - You will receive a response based on the available information.  
+        - **Disclaimer:** This chatbot is a prototype. While we strive for accuracy, responses may not always be 100% correct. Please verify the information accordingly.
         """)
 
 # Initialize session state for chat messages if not already done

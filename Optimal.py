@@ -58,7 +58,8 @@ def create_new_chat():
             'messages': [],
             'timestamp': datetime.now(),
             'first_message': None,  # Start with no title
-            'visible': False  # Hide from chat list initially
+            'visible': False,  # Hide from chat list initially
+            'page_references': ""  # Store page references if any
         }
     st.rerun()
     return chat_id
@@ -458,6 +459,16 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# --- Display stored page references if available ---
+current_chat = st.session_state.chat_history.get(st.session_state.current_chat_id, {})
+if current_chat.get("page_references"):
+    with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
+        if interface_language == "العربية":
+            st.write("هذه الإجابة وفقًا للصفحات: " + current_chat["page_references"])
+        else:
+            st.write("This answer is according to pages: " + current_chat["page_references"])
+# --- End of stored references display ---
+
 # If voice input is detected, process it
 if voice_input:
     st.session_state.messages.append({"role": "user", "content": voice_input})
@@ -498,33 +509,33 @@ if voice_input:
         st.session_state.memory.chat_memory.add_user_message(voice_input)
         st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
-        # Check if the response contains any negative phrases
+        # Check if the response contains any negative phrases and process page references
         if not any(phrase in assistant_response for phrase in negative_phrases):
-            with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
-                if "context" in response:
-                    # Extract unique page numbers from the context
-                    page_numbers = set()
-                    for doc in response["context"]:
-                        page_number = doc.metadata.get("page", "unknown")
-                        if page_number != "unknown" and str(page_number).isdigit():  # Check if page_number is a valid number
-                            page_numbers.add(int(page_number))  # Convert to integer for sorting
-
-                    # Display the page numbers
-                    if page_numbers:
-                        page_numbers_str = ", ".join(map(str, sorted(page_numbers)))  # Sort pages numerically and convert back to strings
-                        st.write(f"هذه الإجابة وفقًا للصفحات: {page_numbers_str}" if interface_language == "العربية" else f"This answer is according to pages: {page_numbers_str}")
-
-                        # Capture and display screenshots of the relevant pages
-                        highlighted_pages = [(page_number, "") for page_number in page_numbers]
-                        screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
-                        for screenshot in screenshots:
-                            st.image(screenshot)
+            page_numbers = set()
+            if "context" in response:
+                for doc in response["context"]:
+                    page_number = doc.metadata.get("page", "unknown")
+                    if page_number != "unknown" and str(page_number).isdigit():
+                        page_numbers.add(int(page_number))
+            if page_numbers:
+                page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
+                # Store the references in the chat history
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
+                    if interface_language == "العربية":
+                        st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str)
                     else:
-                        st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية" else "No valid page numbers available in the context.")
-                else:
-                    st.write("لا يوجد سياق متاح." if interface_language == "العربية" else "No context available.")
+                        st.write("This answer is according to pages: " + page_numbers_str)
+                    # Capture and display screenshots of the relevant pages
+                    highlighted_pages = [(page_number, "") for page_number in page_numbers]
+                    screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
+                    for screenshot in screenshots:
+                        st.image(screenshot)
+            else:
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية" else "No valid page numbers available in the context.")
     else:
-        # Prompt user to ensure embeddings are loaded
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." if interface_language == "العربية" else "Embeddings not loaded. Please check if the embeddings path is correct."
         )
@@ -581,33 +592,33 @@ if human_input:
         st.session_state.memory.chat_memory.add_user_message(human_input)
         st.session_state.memory.chat_memory.add_ai_message(assistant_response)
 
-        # Check if the response contains any negative phrases
+        # Check if the response contains any negative phrases and process page references
         if not any(phrase in assistant_response for phrase in negative_phrases):
-            with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
-                if "context" in response:
-                    # Extract unique page numbers from the context
-                    page_numbers = set()
-                    for doc in response["context"]:
-                        page_number = doc.metadata.get("page", "unknown")
-                        if page_number != "unknown" and str(page_number).isdigit():  # Check if page_number is a valid number
-                            page_numbers.add(int(page_number))  # Convert to integer for sorting
-
-                    # Display the page numbers
-                    if page_numbers:
-                        page_numbers_str = ", ".join(map(str, sorted(page_numbers)))  # Sort pages numerically and convert back to strings
-                        st.write(f"هذه الإجابة وفقًا للصفحات: {page_numbers_str}" if interface_language == "العربية" else f"This Answer is According to Pages: {page_numbers_str}")
-
-                        # Capture and display screenshots of the relevant pages
-                        highlighted_pages = [(page_number, "") for page_number in page_numbers]
-                        screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
-                        for screenshot in screenshots:
-                            st.image(screenshot)
+            page_numbers = set()
+            if "context" in response:
+                for doc in response["context"]:
+                    page_number = doc.metadata.get("page", "unknown")
+                    if page_number != "unknown" and str(page_number).isdigit():
+                        page_numbers.add(int(page_number))
+            if page_numbers:
+                page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
+                # Store the references in the chat history
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = page_numbers_str
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
+                    if interface_language == "العربية":
+                        st.write("هذه الإجابة وفقًا للصفحات: " + page_numbers_str)
                     else:
-                        st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية" else "No valid page numbers available in the context.")
-                else:
-                    st.write("لا يوجد سياق متاح." if interface_language == "العربية" else "No context available.")
+                        st.write("This answer is according to pages: " + page_numbers_str)
+                    # Capture and display screenshots of the relevant pages
+                    highlighted_pages = [(page_number, "") for page_number in page_numbers]
+                    screenshots = pdf_searcher.capture_screenshots(pdf_path, highlighted_pages)
+                    for screenshot in screenshots:
+                        st.image(screenshot)
+            else:
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
+                with st.expander("مراجع الصفحات" if interface_language == "العربية" else "Page References"):
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if interface_language == "العربية" else "No valid page numbers available in the context.")
     else:
-        # Prompt user to ensure embeddings are loaded
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." if interface_language == "العربية" else "Embeddings not loaded. Please check if the embeddings path is correct."
         )

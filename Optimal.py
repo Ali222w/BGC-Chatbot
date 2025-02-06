@@ -209,7 +209,7 @@ with st.sidebar:
         # Define the chat prompt template with memory
         prompt = ChatPromptTemplate.from_messages([
             ("system", """
-            You are a helpful assistant for Basrah Gas Company (BGC). Your task is to answer questions based on the provided context about BGC. The context is supplied as a documented resource (e.g., a multi-page manual or database) that is segmented into pages. Follow these rules strictly:
+            You are a helpful assistant for Basrah Gas Company (BGC). Your task is to answer questions based on the provided context about BGC. The context is supplied as a documented resource (e.g., a multi-page manual or database) that is segmented by pages. Follow these rules strictly:
 
             1. **Language Handling:**
                - If the question is in English, answer in English.
@@ -489,7 +489,6 @@ if voice_input:
     if len(st.session_state.messages) == 1:
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = voice_input
         st.session_state.chat_history[st.session_state.current_chat_id]['visible'] = True
-        st.rerun()  # Immediately update the chat title in the sidebar
     st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
@@ -519,13 +518,14 @@ if voice_input:
         st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_user_message(voice_input)
         st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_ai_message(assistant_response)
 
-        # Process page references if response is clear and if context is available
-        if not any(phrase in assistant_response for phrase in negative_phrases) and "context" in response and response["context"]:
+        # Process page references if response is clear
+        if not any(phrase in assistant_response for phrase in negative_phrases):
             page_numbers = set()
-            for doc in response["context"]:
-                page_number = doc.metadata.get("page", "unknown")
-                if page_number != "unknown" and str(page_number).isdigit():
-                    page_numbers.add(int(page_number))
+            if "context" in response:
+                for doc in response["context"]:
+                    page_number = doc.metadata.get("page", "unknown")
+                    if page_number != "unknown" and str(page_number).isdigit():
+                        page_numbers.add(int(page_number))
             if page_numbers:
                 page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
                 screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_number, "") for page_number in page_numbers])
@@ -539,11 +539,10 @@ if voice_input:
                         st.image(screenshot)
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
-                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = ""
-        else:
-            # No context available, so do not show page references
-            st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
-            st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = ""
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = []
+                with st.expander("مراجع الصفحات" if st.session_state.get('interface_language', 'English') == "العربية" else "Page References"):
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if st.session_state.get('interface_language', 'English') == "العربية"
+                             else "No valid page numbers available in the context.")
     else:
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." 
@@ -572,7 +571,6 @@ if human_input:
     if len(st.session_state.messages) == 1:
         st.session_state.chat_history[st.session_state.current_chat_id]['first_message'] = human_input
         st.session_state.chat_history[st.session_state.current_chat_id]['visible'] = True
-        st.rerun()  # Immediately update the chat title in the sidebar
     st.session_state.chat_history[st.session_state.current_chat_id]['messages'] = list(st.session_state.messages)
 
     if "vectors" in st.session_state and st.session_state.vectors is not None:
@@ -600,13 +598,13 @@ if human_input:
         st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_user_message(human_input)
         st.session_state.chat_memories[st.session_state.current_chat_id].chat_memory.add_ai_message(assistant_response)
 
-        # Process page references if response is clear and if context is available
-        if not any(phrase in assistant_response for phrase in negative_phrases) and "context" in response and response["context"]:
+        if not any(phrase in assistant_response for phrase in negative_phrases):
             page_numbers = set()
-            for doc in response["context"]:
-                page_number = doc.metadata.get("page", "unknown")
-                if page_number != "unknown" and str(page_number).isdigit():
-                    page_numbers.add(int(page_number))
+            if "context" in response:
+                for doc in response["context"]:
+                    page_number = doc.metadata.get("page", "unknown")
+                    if page_number != "unknown" and str(page_number).isdigit():
+                        page_numbers.add(int(page_number))
             if page_numbers:
                 page_numbers_str = ", ".join(map(str, sorted(page_numbers)))
                 screenshots = pdf_searcher.capture_screenshots(pdf_path, [(page_number, "") for page_number in page_numbers])
@@ -620,11 +618,10 @@ if human_input:
                         st.image(screenshot)
             else:
                 st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
-                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = ""
-        else:
-            # No context available, so do not show page references
-            st.session_state.chat_history[st.session_state.current_chat_id]["page_references"] = ""
-            st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = ""
+                st.session_state.chat_history[st.session_state.current_chat_id]["page_screenshots"] = []
+                with st.expander("مراجع الصفحات" if st.session_state.get('interface_language', 'English') == "العربية" else "Page References"):
+                    st.write("لا توجد أرقام صفحات صالحة في السياق." if st.session_state.get('interface_language', 'English') == "العربية"
+                             else "No valid page numbers available in the context.")
     else:
         assistant_response = (
             "لم يتم تحميل التضميدات. يرجى التحقق مما إذا كان مسار التضميدات صحيحًا." 
